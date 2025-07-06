@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -14,13 +13,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-  model Product {
+model Product {
+  @@map("Products")
   id          Int      @id @default(autoincrement())
   name        String
   description String
   price       Float
-  discount    Int?
-  image       String
-  category    String
-  createdAt   DateTime @default(now())
+  discount    Int?      // в процентах
+  image       String    // URL в Cloudinary
+  category    String    // тип: smartphone, laptop и т.д.
+  createdAt   DateTime  @default(now())
 }
