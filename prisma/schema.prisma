@@ -13,14 +13,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+  attributes Attribute[]
+}
+
 model Product {
-  @@map("Products")
   id          Int      @id @default(autoincrement())
   name        String
-  description String
+  description String?
   price       Float
-  discount    Int?      // в процентах
-  image       String    // URL в Cloudinary
-  category    String    // тип: smartphone, laptop и т.д.
-  createdAt   DateTime  @default(now())
+  discount    Int?
+  finalPrice  Float   
+  image       String?
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  attributes  ProductAttribute[]
+}
+
+
+model Attribute {
+  id         Int       @id @default(autoincrement())
+  name       String
+  label      String
+  type       String
+  unit       String?
+  categoryId Int
+  category   Category   @relation(fields: [categoryId], references: [id])
+  productAttributes ProductAttribute[]
+}
+
+model ProductAttribute {
+  id           Int         @id @default(autoincrement())
+  product      Product     @relation(fields: [productId], references: [id])
+  productId    Int
+  attribute    Attribute   @relation(fields: [attributeId], references: [id])
+  attributeId  Int
+  value        String      // Храним как строку всегда
 }
