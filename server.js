@@ -49,6 +49,21 @@ const typeDefs = /* GraphQL */ `
     attributes(category: String!): [AttributeWithValues!]!
   }
 
+  type ProductWithFeatures {
+    id: Int!
+    name: String!
+    description: String
+    price: Float!
+    discount: Int
+    image: String
+    category: Category!
+    features: JSON!
+  }
+
+  extend type Query {
+    product(id: String!): ProductWithFeatures
+  }
+
   type AttributeValue {
     value: String!
     count: Int!
@@ -175,6 +190,31 @@ const resolvers = {
       );
 
       return result;
+    },
+
+    // Получение продукта с его атрибутами
+    product: async (_, { id }) => {
+      const product = await prisma.product.findUnique({
+        where: { id: parseInt(id, 10) },
+        include: { category: true },
+      });
+
+      if (!product) throw new Error("Продукт не найден");
+
+      const attributes = await prisma.productAttribute.findMany({
+        where: { productId: product.id },
+        include: { attribute: true },
+      });
+
+      const features = attributes.reduce((acc, item) => {
+        acc[item.attribute.name] = item.value;
+        return acc;
+      }, {});
+
+      return {
+        ...product,
+        features,
+      };
     },
   },
 };
