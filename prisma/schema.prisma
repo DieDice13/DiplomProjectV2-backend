@@ -28,9 +28,34 @@ model Product {
   discount    Int?
   finalPrice  Float   
   image       String?
+  reviews Review[]
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id])
   attributes  ProductAttribute[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  reviews   Review[] // связь с отзывами
+  role      String   @default("USER") // ← по умолчанию обычный пользователь
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int    
+  comment   String
+  createdAt DateTime @default(now())
+
+  // связи
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
 }
 
 
