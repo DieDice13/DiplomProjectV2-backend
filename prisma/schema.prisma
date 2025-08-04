@@ -14,67 +14,74 @@ datasource db {
 }
 
 model Category {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  products Product[]
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  products   Product[]
   attributes Attribute[]
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int                @id @default(autoincrement())
   name        String
   description String?
   price       Float
   discount    Int?
-  finalPrice  Float   
+  finalPrice  Float
   image       String?
-  reviews Review[]
+  reviews     Review[]
   categoryId  Int
-  category    Category @relation(fields: [categoryId], references: [id])
+  category    Category           @relation(fields: [categoryId], references: [id])
   attributes  ProductAttribute[]
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) // используем cuid для безопасной генерации строк
   email     String   @unique
   password  String
   name      String
-  reviews   Review[] // связь с отзывами
-  role      String   @default("USER") // ← по умолчанию обычный пользователь
+  reviews   Review[]
+  role      Role     @default(USER)
   createdAt DateTime @default(now())
 }
 
 model Review {
   id        String   @id @default(cuid())
-  rating    Int    
+  rating    Int
   comment   String
   createdAt DateTime @default(now())
 
-  // связи
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  product   Product  @relation(fields: [productId], references: [id])
-  productId String
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
 }
 
-
 model Attribute {
-  id         Int       @id @default(autoincrement())
-  name       String
-  label      String
-  type       String
-  unit       String?
-  categoryId Int
-  category   Category   @relation(fields: [categoryId], references: [id])
+  id                Int                @id @default(autoincrement())
+  name              String
+  label             String
+  type              String
+  unit              String?
+  categoryId        Int
+  category          Category           @relation(fields: [categoryId], references: [id])
   productAttributes ProductAttribute[]
 }
 
 model ProductAttribute {
-  id           Int         @id @default(autoincrement())
-  product      Product     @relation(fields: [productId], references: [id])
-  productId    Int
-  attribute    Attribute   @relation(fields: [attributeId], references: [id])
-  attributeId  Int
-  value        String      // Храним как строку всегда
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  attributeId Int
+  attribute   Attribute @relation(fields: [attributeId], references: [id])
+
+  value String // значение всегда как строка
+
+  @@unique([productId, attributeId])
+}
+
+enum Role {
+  USER
+  ADMIN
 }

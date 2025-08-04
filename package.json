@@ -25,6 +25,7 @@
     "graphql": "^16.11.0",
     "graphql-type-json": "^0.3.2",
     "graphql-yoga": "^5.14.0",
+    "joi": "^18.0.0",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.11.1"
   },

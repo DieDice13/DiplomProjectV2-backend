@@ -5,8 +5,12 @@ import { makeExecutableSchema } from "@graphql-tools/schema";
 import { GraphQLJSON } from "graphql-type-json";
 import bcrypt from "bcryptjs";
 import { signToken, getUserId } from "./auth.js";
+import { GraphQLError } from "graphql";
+import { registerSchema, loginSchema } from "./validation/userSchemas.js";
 
 const prisma = new PrismaClient();
+
+const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || "10", 10);
 
 // GraphQL-схема
 const typeDefs = /* GraphQL */ `
@@ -64,7 +68,7 @@ const typeDefs = /* GraphQL */ `
   }
 
   type User {
-    id: Int!
+    id: String!
     name: String!
     email: String!
     createdAt: String!
@@ -72,7 +76,7 @@ const typeDefs = /* GraphQL */ `
   }
 
   type Review {
-    id: Int!
+    id: String!
     rating: Int!
     comment: String!
     createdAt: String!
@@ -112,32 +116,99 @@ const resolvers = {
   JSON: GraphQLJSON,
 
   Mutation: {
-    register: async (_, { name, email, password }) => {
-      const hashedPassword = await bcrypt.hash(password, 10);
+    register: async (_, args, { prisma }) => {
+      // Валидация
+      const { error } = registerSchema.validate(args);
+      if (error) {
+        throw new GraphQLError(
+          "Ошибка валидации: " + error.details[0].message,
+          {
+            extensions: { code: "BAD_USER_INPUT" },
+          }
+        );
+      }
 
-      const user = await prisma.user.create({
-        data: { name, email, password: hashedPassword },
-      });
+      const normalizedEmail = args.email.toLowerCase();
 
-      const token = signToken(user.id);
+      try {
+        const hashedPassword = await bcrypt.hash(args.password, SALT_ROUNDS);
 
-      return { token, user };
+        const user = await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            password: hashedPassword,
+            name: args.name,
+          },
+        });
+
+        const token = signToken(user.id);
+
+        return {
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            createdAt: user.createdAt,
+          },
+        };
+      } catch (error) {
+        if (
+          error instanceof PrismaClientKnownRequestError &&
+          error.code === "P2002"
+        ) {
+          throw new GraphQLError("Email уже используется.", {
+            extensions: { code: "BAD_USER_INPUT" },
+          });
+        }
+
+        console.error("❌ Ошибка при регистрации:", error);
+        throw new GraphQLError("Внутренняя ошибка сервера.", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
+      }
     },
 
-    login: async (_, { email, password }) => {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) throw new Error("Пользователь не найден");
+    login: async (_, args, { prisma }) => {
+      const { error } = loginSchema.validate(args);
+      if (error) {
+        throw new GraphQLError(
+          "Ошибка валидации: " + error.details[0].message,
+          {
+            extensions: { code: "BAD_USER_INPUT" },
+          }
+        );
+      }
 
-      if (!user || !(await bcrypt.compare(password, user.password))) {
-        throw new Error("Неверный email или пароль"); // ← вместо двух разных ошибок
+      const normalizedEmail = args.email.toLowerCase();
+
+      const user = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+
+      const isPasswordValid =
+        user && (await bcrypt.compare(args.password, user.password));
+
+      if (!user || !isPasswordValid) {
+        throw new GraphQLError("Неверный email или пароль", {
+          extensions: { code: "INVALID_CREDENTIALS" },
+        });
       }
 
       const token = signToken(user.id);
 
-      return { token, user };
+      return {
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt,
+        },
+      };
     },
 
-    addReview: async (_, { productId, rating, comment }, { req }) => {
+    addReview: async (_, { productId, rating, comment }, { req, prisma }) => {
       const userId = getUserId(req);
       if (!userId) throw new Error("Требуется авторизация");
 
@@ -159,11 +230,11 @@ const resolvers = {
   Query: {
     // Получение списка продуктов с фильтрами, сортировкой и пагинацией
     products: async (_, { category, filters = {}, sort, page, limit }) => {
-      console.log("=== 🔍 ВХОДНЫЕ ПАРАМЕТРЫ ===");
-      console.log("Категория:", category);
-      console.log("Фильтры:", filters);
-      console.log("Сортировка:", sort);
-      console.log("Страница:", page, "Лимит:", limit);
+      // console.log("=== 🔍 ВХОДНЫЕ ПАРАМЕТРЫ ===");
+      // console.log("Категория:", category);
+      // console.log("Фильтры:", filters);
+      // console.log("Сортировка:", sort);
+      // console.log("Страница:", page, "Лимит:", limit);
 
       const categoryEntity = await prisma.category.findUnique({
         where: { name: category },
@@ -185,7 +256,7 @@ const resolvers = {
 
       const whereProducts = {
         categoryId: categoryEntity.id,
-        AND: filterConditions,
+        ...(filterConditions.length > 0 && { AND: filterConditions }),
       };
 
       const orderBy = (() => {
@@ -319,7 +390,10 @@ const yoga = createYoga({
   graphqlEndpoint: "/graphql",
   graphiql: true,
   schema,
-  context: ({ request }) => ({ req: request }), // ← Добавь эту строку!
+  context: ({ request }) => ({
+    req: request,
+    prisma, // ← вот это обязательно!
+  }),
 });
 
 const server = createServer(yoga);

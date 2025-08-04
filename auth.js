@@ -13,7 +13,7 @@ export function getUserId(req) {
   const token = auth.replace("Bearer ", "");
   try {
     const { userId } = jwt.verify(token, JWT_SECRET);
-    return userId;
+    return typeof userId === "string" ? parseInt(userId, 10) : userId;
   } catch {
     return null;
   }
