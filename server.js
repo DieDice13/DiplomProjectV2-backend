@@ -84,6 +84,17 @@ const typeDefs = /* GraphQL */ `
     product: Product!
   }
 
+  type Favorite {
+    id: String!
+    product: Product!
+  }
+
+  type CartItem {
+    id: String!
+    product: Product!
+    quantity: Int!
+  }
+
   type AuthPayload {
     token: String!
     user: User!
@@ -102,12 +113,23 @@ const typeDefs = /* GraphQL */ `
     product(id: String!): ProductWithFeatures
     reviewsByProduct(productId: Int!): [Review!]!
     myReviews: [Review!]!
+    me: User
+
+    favorites: [Product!]!
+    cart: [CartItem!]!
   }
 
   type Mutation {
     register(name: String!, email: String!, password: String!): AuthPayload!
     login(email: String!, password: String!): AuthPayload!
     addReview(productId: Int!, rating: Int!, comment: String!): Review!
+
+    addToFavorites(productId: Int!): Product!
+    removeFromFavorites(productId: Int!): Boolean!
+
+    addToCart(productId: Int!, quantity: Int): CartItem!
+    removeFromCart(productId: Int!): Boolean!
+    updateCartItem(productId: Int!, quantity: Int!): CartItem!
   }
 `;
 
@@ -153,11 +175,9 @@ const resolvers = {
           },
         };
       } catch (error) {
-        if (
-          error instanceof PrismaClientKnownRequestError &&
-          error.code === "P2002"
-        ) {
-          throw new GraphQLError("Email уже используется.", {
+        // 💥 Правильная проверка на уникальный email
+        if (error.code === "P2002") {
+          throw new GraphQLError("Почта уже используется", {
             extensions: { code: "BAD_USER_INPUT" },
           });
         }
@@ -223,6 +243,91 @@ const resolvers = {
           user: true,
           product: true,
         },
+      });
+    },
+
+    addToFavorites: async (_, { productId }, { req, prisma }) => {
+      const userId = getUserId(req);
+      if (!userId) throw new GraphQLError("Требуется авторизация");
+
+      const favorite = await prisma.favorite.upsert({
+        where: {
+          userId_productId: { userId, productId },
+        },
+        update: {},
+        create: { userId, productId },
+        include: {
+          product: {
+            include: {
+              category: true, // добавляем category, чтобы не было null
+            },
+          },
+        },
+      });
+
+      return favorite.product; // Важно: вернуть product, а не favorite
+    },
+
+    removeFromFavorites: async (_, { productId }, { req, prisma }) => {
+      const userId = getUserId(req);
+      if (!userId) throw new GraphQLError("Требуется авторизация");
+
+      await prisma.favorite.deleteMany({
+        where: { userId, productId },
+      });
+
+      return true;
+    },
+
+    addToCart: async (_, { productId, quantity = 1 }, { req, prisma }) => {
+      const userId = getUserId(req);
+      if (!userId) throw new GraphQLError("Требуется авторизация");
+
+      return prisma.cartItem.upsert({
+        where: {
+          userId_productId: {
+            userId,
+            productId,
+          },
+        },
+        update: {
+          quantity: { increment: quantity },
+        },
+        create: {
+          userId,
+          productId,
+          quantity,
+        },
+        include: {
+          product: true,
+        },
+      });
+    },
+
+    removeFromCart: async (_, { productId }, { req, prisma }) => {
+      const userId = getUserId(req);
+      if (!userId) throw new GraphQLError("Требуется авторизация");
+
+      await prisma.cartItem.deleteMany({
+        where: { userId, productId },
+      });
+
+      return true;
+    },
+
+    updateCartItem: async (_, { productId, quantity }, { req, prisma }) => {
+      const userId = getUserId(req);
+      if (!userId) throw new GraphQLError("Требуется авторизация");
+
+      return prisma.cartItem.update({
+        where: {
+          userId_productId: {
+            userId,
+            productId,
+          },
+        },
+        data: { quantity },
+        include: { product: true },
       });
     },
   },
@@ -377,6 +482,47 @@ const resolvers = {
       return prisma.review.findMany({
         where: { userId },
         include: { product: true, user: true },
+      });
+    },
+
+    me: async (_, __, { req, prisma }) => {
+      const userId = getUserId(req);
+      console.log("🧠 Расшифрованный userId:", userId);
+
+      if (!userId) throw new GraphQLError("Пользователь не авторизован");
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      console.log("👤 Найденный пользователь:", user);
+
+      return user;
+    },
+
+    favorites: async (_, __, { req, prisma }) => {
+      console.log("Auth header:", req.headers.authorization);
+
+      const userId = getUserId(req);
+      console.log("Запрос избранного от пользователя:", userId);
+
+      if (!userId) throw new GraphQLError("Требуется авторизация");
+
+      const favorites = await prisma.favorite.findMany({
+        where: { userId },
+        include: { product: { include: { category: true } } },
+      });
+
+      return favorites.map((fav) => fav.product);
+    },
+
+    cart: async (_, __, { req, prisma }) => {
+      const userId = getUserId(req);
+      if (!userId) throw new GraphQLError("Требуется авторизация");
+
+      return prisma.cartItem.findMany({
+        where: { userId },
+        include: { product: true },
       });
     },
   },

@@ -7,13 +7,17 @@ export function signToken(userId) {
 }
 
 export function getUserId(req) {
-  const auth = req.headers.authorization;
+  console.log("📦 Все заголовки:", req.headers); // ✅ Лог всех заголовков
+
+  const auth = req.headers.get("authorization");
+  console.log("💡 Заголовок Authorization:", auth);
+
   if (!auth) return null;
 
   const token = auth.replace("Bearer ", "");
   try {
     const { userId } = jwt.verify(token, JWT_SECRET);
-    return typeof userId === "string" ? parseInt(userId, 10) : userId;
+    return userId;
   } catch {
     return null;
   }
