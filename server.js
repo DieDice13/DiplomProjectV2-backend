@@ -281,14 +281,20 @@ const resolvers = {
 
     addToCart: async (_, { productId, quantity = 1 }, { req, prisma }) => {
       const userId = getUserId(req);
+      console.log(
+        "📦 addToCart userId:",
+        userId,
+        "productId:",
+        productId,
+        "quantity:",
+        quantity
+      );
+
       if (!userId) throw new GraphQLError("Требуется авторизация");
 
       return prisma.cartItem.upsert({
         where: {
-          userId_productId: {
-            userId,
-            productId,
-          },
+          userId_productId: { userId, productId },
         },
         update: {
           quantity: { increment: quantity },
@@ -299,7 +305,9 @@ const resolvers = {
           quantity,
         },
         include: {
-          product: true,
+          product: {
+            include: { category: true },
+          },
         },
       });
     },
@@ -321,13 +329,14 @@ const resolvers = {
 
       return prisma.cartItem.update({
         where: {
-          userId_productId: {
-            userId,
-            productId,
-          },
+          userId_productId: { userId, productId },
         },
         data: { quantity },
-        include: { product: true },
+        include: {
+          product: {
+            include: { category: true },
+          },
+        },
       });
     },
   },
@@ -392,7 +401,7 @@ const resolvers = {
         }),
       ]);
 
-      console.log(`=== 📊 Найдено продуктов: ${totalCount} ===`);
+      // console.log(`=== 📊 Найдено продуктов: ${totalCount} ===`);
 
       return {
         items,
@@ -520,10 +529,13 @@ const resolvers = {
       const userId = getUserId(req);
       if (!userId) throw new GraphQLError("Требуется авторизация");
 
-      return prisma.cartItem.findMany({
+      const items = await prisma.cartItem.findMany({
         where: { userId },
-        include: { product: true },
+        include: { product: { include: { category: true } } },
       });
+
+      console.log(JSON.stringify(items, null, 2));
+      return items;
     },
   },
 };
