@@ -110,7 +110,7 @@ const typeDefs = /* GraphQL */ `
     ): ProductList
 
     attributes(category: String!): [AttributeWithValues!]!
-    product(id: String!): ProductWithFeatures
+    product(id: Int!): ProductWithFeatures
     reviewsByProduct(productId: Int!): [Review!]!
     myReviews: [Review!]!
     me: User
@@ -455,7 +455,7 @@ const resolvers = {
     // Получение продукта с его атрибутами
     product: async (_, { id }) => {
       const product = await prisma.product.findUnique({
-        where: { id: parseInt(id, 10) },
+        where: { id },
         include: { category: true },
       });
 

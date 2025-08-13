@@ -7,10 +7,10 @@ export function signToken(userId) {
 }
 
 export function getUserId(req) {
-  console.log("📦 Все заголовки:", req.headers); // ✅ Лог всех заголовков
+  // console.log("📦 Все заголовки:", req.headers);
 
   const auth = req.headers.get("authorization");
-  console.log("💡 Заголовок Authorization:", auth);
+  // console.log("💡 Заголовок Authorization:", auth);
 
   if (!auth) return null;
 
