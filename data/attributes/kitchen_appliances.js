@@ -1,0 +1,88 @@
+﻿export const kitchen_appliances = {
+  category: "kitchen_appliances",
+  attrs: [
+    {
+      name: "type",
+      label: "Тип техники",
+      type: "select",
+      values: ["Чайник", "Мультиварка", "Миниварка", "Настольная плита"],
+    },
+    {
+      name: "brand",
+      label: "Бренд",
+      type: "select",
+      values: [
+        "Iplate",
+        "Redmond",
+        "Scarlett",
+        "National",
+        "Kitfort",
+        "Hotter",
+        "Jardeko",
+      ],
+    },
+    {
+      name: "power",
+      label: "Мощность (Вт)",
+      type: "select",
+      values: ["120", "450", "600", "700", "860", "1800", "2000", "2200"],
+    },
+    {
+      name: "volume",
+      label: "Объем (л)",
+      type: "select",
+      values: ["1.0", "1.5", "1.7", "1.8", "3.0", "5.0"],
+    },
+    {
+      name: "body_material",
+      label: "Материал корпуса",
+      type: "select",
+      values: [
+        "Пластик",
+        "Металл",
+        "Стекло",
+        "Нержавеющая сталь",
+        "Керамика",
+        "Пластик/стекло",
+        "Металл/стекло",
+        "Нержавеющая сталь, ABS пластик",
+      ],
+    },
+    {
+      name: "inner_coating",
+      label: "Внутреннее покрытие чаши",
+      type: "select",
+      values: [
+        "Антипригарное Daikin",
+        "Алюминиевое",
+        "Керамическое",
+        "Нержавеющая сталь",
+      ],
+    },
+    {
+      name: "control_type",
+      label: "Тип управления",
+      type: "select",
+      values: ["Механическое", "Электронное", "Сенсорное"],
+    },
+    {
+      name: "heating_element_type",
+      label: "Тип нагревательного элемента",
+      type: "select",
+      values: ["Дисковый", "Закрытая спираль", "Кольцевой"],
+    },
+    {
+      name: "features",
+      label: "Доп. функции",
+      type: "select",
+      values: [
+        "Подсветка",
+        "Автоотключение",
+        "Управление со смартфона",
+        "Шкала объема блюда",
+        "Дисплей",
+        "Отсек для шнура",
+      ],
+    },
+  ],
+};
