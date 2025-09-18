@@ -281,14 +281,14 @@ const resolvers = {
 
     addToCart: async (_, { productId, quantity = 1 }, { req, prisma }) => {
       const userId = getUserId(req);
-      console.log(
-        "📦 addToCart userId:",
-        userId,
-        "productId:",
-        productId,
-        "quantity:",
-        quantity
-      );
+      // console.log(
+      //   "📦 addToCart userId:",
+      //   userId,
+      //   "productId:",
+      //   productId,
+      //   "quantity:",
+      //   quantity
+      // );
 
       if (!userId) throw new GraphQLError("Требуется авторизация");
 
@@ -496,7 +496,7 @@ const resolvers = {
 
     me: async (_, __, { req, prisma }) => {
       const userId = getUserId(req);
-      console.log("🧠 Расшифрованный userId:", userId);
+      // console.log("🧠 Расшифрованный userId:", userId);
 
       if (!userId) throw new GraphQLError("Пользователь не авторизован");
 
@@ -504,16 +504,16 @@ const resolvers = {
         where: { id: userId },
       });
 
-      console.log("👤 Найденный пользователь:", user);
+      // console.log("👤 Найденный пользователь:", user);
 
       return user;
     },
 
     favorites: async (_, __, { req, prisma }) => {
-      console.log("Auth header:", req.headers.authorization);
+      // console.log("Auth header:", req.headers.authorization);
 
       const userId = getUserId(req);
-      console.log("Запрос избранного от пользователя:", userId);
+      // console.log("Запрос избранного от пользователя:", userId);
 
       if (!userId) throw new GraphQLError("Требуется авторизация");
 
@@ -534,7 +534,7 @@ const resolvers = {
         include: { product: { include: { category: true } } },
       });
 
-      console.log(JSON.stringify(items, null, 2));
+      // console.log(JSON.stringify(items, null, 2));
       return items;
     },
   },
@@ -550,12 +550,14 @@ const yoga = createYoga({
   schema,
   context: ({ request }) => ({
     req: request,
-    prisma, // ← вот это обязательно!
+    prisma,
   }),
 });
 
 const server = createServer(yoga);
 
-server.listen(4000, () => {
-  console.log("🚀 GraphQL сервер запущен на http://localhost:4000/graphql");
+const PORT = process.env.PORT || 4000;
+
+server.listen(PORT, () => {
+  console.log(`🚀 GraphQL сервер запущен на http://localhost:${PORT}/graphql`);
 });
