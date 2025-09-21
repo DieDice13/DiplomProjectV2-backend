@@ -1,4 +1,5 @@
 ﻿import { PrismaClient } from "@prisma/client";
+import pkg from "@prisma/client";
 import { createYoga } from "graphql-yoga";
 import { createServer } from "node:http";
 import { makeExecutableSchema } from "@graphql-tools/schema";
@@ -8,6 +9,7 @@ import { signToken, getUserId } from "./auth.js";
 import { GraphQLError } from "graphql";
 import { registerSchema, loginSchema } from "./validation/userSchemas.js";
 
+const { PrismaClient } = pkg;
 const prisma = new PrismaClient();
 
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || "10", 10);
