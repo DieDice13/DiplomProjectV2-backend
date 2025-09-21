@@ -1,5 +1,4 @@
-﻿import { PrismaClient } from "@prisma/client";
-import pkg from "@prisma/client";
+﻿import pkg from "@prisma/client";
 import { createYoga } from "graphql-yoga";
 import { createServer } from "node:http";
 import { makeExecutableSchema } from "@graphql-tools/schema";
