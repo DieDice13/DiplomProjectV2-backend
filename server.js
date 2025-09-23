@@ -1,4 +1,7 @@
-﻿import pkg from "@prisma/client";
+﻿import dotenv from "dotenv";
+dotenv.config();
+
+import pkg from "@prisma/client";
 import { createYoga } from "graphql-yoga";
 import { createServer } from "node:http";
 import { makeExecutableSchema } from "@graphql-tools/schema";
@@ -7,25 +10,6 @@ import bcrypt from "bcryptjs";
 import { signToken, getUserId } from "./auth.js";
 import { GraphQLError } from "graphql";
 import { registerSchema, loginSchema } from "./validation/userSchemas.js";
-import cors from "cors";
-
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://diplomprojectv2.onrender.com",
-];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // для Postman и server-side
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
 
 const { PrismaClient } = pkg;
 const prisma = new PrismaClient();
@@ -572,6 +556,10 @@ const yoga = createYoga({
     req: request,
     prisma,
   }),
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS.split(","),
+    credentials: true,
+  },
 });
 
 const server = createServer(yoga);
